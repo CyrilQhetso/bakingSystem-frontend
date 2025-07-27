@@ -1,0 +1,309 @@
+<div class="dashboard-container">
+  <!-- Hero Section -->
+  <div class="hero-section">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="hero-title" *ngIf="user">Welcome back, {{ user.name.split(' ')[0] }}!</h1>
+          <p class="hero-subtitle">Manage your finances with confidence</p>
+        </div>
+        <div class="col-md-4 text-end">
+          <div class="total-balance-card">
+            <div class="balance-label">Total Balance</div>
+            <div class="balance-amount">R{{ totalBalance | number:'1.2-2' }}</div>
+            <button class="btn btn-sm btn-outline-light mt-2" (click)="refreshData()">
+              <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container dashboard-content">
+    <!-- Loading State -->
+    <div class="text-center py-5" *ngIf="loading">
+      <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3 text-muted">Loading your accounts...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="alert alert-danger alert-modern" *ngIf="error">
+      <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+      <button type="button" class="btn-close" (click)="error = ''"></button>
+    </div>
+
+    <!-- Accounts Section -->
+    <div *ngIf="!loading">
+      <!-- Quick Stats -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-wallet"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ accounts.length }}</div>
+              <div class="stat-label">Active Accounts</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-arrow-up text-success"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">R{{ monthlyIncome | number:'1.0-0' }}</div>
+              <div class="stat-label">Monthly Income</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-arrow-down text-warning"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">R{{ monthlyExpenses | number:'1.0-0' }}</div>
+              <div class="stat-label">Monthly Expenses</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ recentTransactions.length }}</div>
+              <div class="stat-label">Recent Transactions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="quick-actions-card">
+            <h5 class="mb-3">
+              <i class="fas fa-bolt me-2"></i>Quick Actions
+            </h5>
+            <div class="row">
+              <div class="col-md-3 mb-2">
+                <button class="btn btn-primary w-100" (click)="navigateToTransfer()">
+                  <i class="fas fa-exchange-alt me-2"></i>Transfer Money
+                </button>
+              </div>
+              <div class="col-md-3 mb-2">
+                <button class="btn btn-success w-100" (click)="openCreateAccountModal()">
+                  <i class="fas fa-plus me-2"></i>New Account
+                </button>
+              </div>
+              <div class="col-md-3 mb-2">
+                <a routerLink="/transactions/all" class="btn btn-info w-100">
+                  <i class="fas fa-history me-2"></i>All Transactions
+                </a>
+              </div>
+              <div class="col-md-3 mb-2">
+                <button class="btn btn-outline-primary w-100" (click)="refreshData()">
+                  <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Cards and Recent Transactions Row -->
+      <div class="row" *ngIf="accounts.length > 0">
+        <!-- Account Cards Column -->
+        <div class="col-lg-8">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="section-title">
+              <i class="fas fa-credit-card me-2"></i>Your Cards
+            </h3>
+            <button class="btn btn-outline-success btn-sm" (click)="openCreateAccountModal()">
+              <i class="fas fa-plus me-1"></i>Add Account
+            </button>
+          </div>
+          
+          <div class="row">
+            <div class="col-xl-6 mb-4" *ngFor="let account of accounts">
+              <!-- Bank Card Display -->
+              <div class="bank-card" [style.background]="getCardGradient(account.accountType)">
+                <div class="card-header-row">
+                  <div class="card-type">
+                    <i [class]="getCardTypeIcon(account.accountType)"></i>
+                    {{ account.accountType | titlecase }}
+                  </div>
+                  <div class="bank-logo">Vaulify</div>
+                </div>
+                
+                <div class="card-number">
+                  {{ formatCardNumber(account.cardNumber) }}
+                </div>
+                
+                <div class="card-details-row">
+                  <div class="card-holder">
+                    <div class="label">CARD HOLDER</div>
+                    <div class="value">{{ user?.name?.toUpperCase() || 'CARD HOLDER' }}</div>
+                  </div>
+                  <div class="card-expiry">
+                    <div class="label">EXPIRES</div>
+                    <div class="value">{{ account.expiryDate || '12/27' }}</div>
+                  </div>
+                </div>
+                
+                <div class="card-chip">
+                  <div class="chip"></div>
+                </div>
+              </div>
+              
+              <!-- Account Info Card -->
+              <div class="account-info-card">
+                <div class="account-header">
+                  <div class="account-details">
+                    <h6 class="account-title">{{ account.accountType | titlecase }} Account</h6>
+                    <p class="account-number">{{ account.accountNumber }}</p>
+                  </div>
+                  <div class="account-balance">
+                    <div class="balance-label">Available Balance</div>
+                    <div class="balance-amount">R{{ account.balance | number:'1.2-2' }}</div>
+                  </div>
+                </div>
+                
+                <div class="account-actions">
+                  <a [routerLink]="['/transactions', account.id]" class="action-btn primary">
+                    <i class="fas fa-list me-1"></i>History
+                  </a>
+                  <a [routerLink]="['/deposit', account.id]" class="action-btn success">
+                    <i class="fas fa-plus me-1"></i>Deposit
+                  </a>
+                  <a [routerLink]="['/withdraw', account.id]" class="action-btn warning">
+                    <i class="fas fa-minus me-1"></i>Withdraw
+                  </a>
+                  <button class="action-btn info" (click)="navigateToTransfer(account.id)">
+                    <i class="fas fa-exchange-alt me-1"></i>Transfer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions Column -->
+        <div class="col-lg-4">
+          <h3 class="section-title">
+            <i class="fas fa-clock me-2"></i>Recent Activity
+          </h3>
+          
+          <div class="recent-transactions-card">
+            <div class="transactions-list" *ngIf="recentTransactions.length > 0">
+              <div class="transaction-item" *ngFor="let transaction of recentTransactions">
+                <div class="transaction-icon">
+                  <i [class]="getTransactionIcon(transaction)"></i>
+                </div>
+                <div class="transaction-details">
+                  <div class="transaction-desc">{{ transaction.description || transaction.type }}</div>
+                  <div class="transaction-date">{{ transaction.timestamp | date:'short' }}</div>
+                </div>
+                <div class="transaction-amount" 
+                     [class]="getTransactionClass(transaction, transaction.fromAccountId || transaction.toAccountId || '')">
+                  {{ getTransactionAmount(transaction, transaction.fromAccountId || transaction.toAccountId || '') >= 0 ? '+' : '' }}R{{ abs(getTransactionAmount(transaction, transaction.fromAccountId || transaction.toAccountId || '')) | number:'1.2-2' }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="text-center py-4" *ngIf="recentTransactions.length === 0">
+              <i class="fas fa-inbox text-muted mb-2" style="font-size: 2rem;"></i>
+              <p class="text-muted">No recent transactions</p>
+            </div>
+            
+            <div class="text-center mt-3" *ngIf="recentTransactions.length > 0">
+              <a routerLink="/transactions/all" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-eye me-1"></i>View All
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="accounts.length === 0">
+        <div class="empty-icon">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <h3>No accounts found</h3>
+        <p>Create your first account to get started with SecureBank</p>
+        <button class="btn btn-primary" (click)="openCreateAccountModal()">
+          <i class="fas fa-plus me-2"></i>Create Account
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Account Modal -->
+<div class="modal fade" [class.show]="showCreateAccountModal" [style.display]="showCreateAccountModal ? 'block' : 'none'" *ngIf="showCreateAccountModal">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-plus-circle me-2"></i>Create New Account
+        </h5>
+        <button type="button" class="btn-close" (click)="closeCreateAccountModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-4">Choose the type of account you'd like to create:</p>
+        
+        <div class="account-type-options">
+          <div class="form-check account-type-option" *ngFor="let type of accountTypes">
+            <input 
+              class="form-check-input" 
+              type="radio" 
+              [id]="type.value" 
+              [(ngModel)]="newAccountType" 
+              [value]="type.value"
+              [disabled]="!canCreateMoreAccounts(type.value)">
+            <label class="form-check-label w-100" [for]="type.value">
+              <div class="d-flex align-items-center">
+                <i [class]="type.icon + ' me-3'"></i>
+                <div class="flex-grow-1">
+                  <div class="fw-bold">{{ type.label }}</div>
+                  <div class="text-muted small">
+                    {{ getAccountTypeCount(type.value) }}/2 accounts created
+                  </div>
+                </div>
+                <div class="badge bg-secondary" *ngIf="!canCreateMoreAccounts(type.value)">
+                  Limit Reached
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+          <i class="fas fa-info-circle me-2"></i>
+          You can create up to 2 accounts of each type.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeCreateAccountModal()">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="createNewAccount()"
+          [disabled]="!canCreateMoreAccounts(newAccountType)">
+          <i class="fas fa-plus me-2"></i>Create Account
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="showCreateAccountModal" *ngIf="showCreateAccountModal"></div>

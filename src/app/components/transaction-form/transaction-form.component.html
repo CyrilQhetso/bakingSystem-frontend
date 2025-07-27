@@ -1,0 +1,126 @@
+<div class="transaction-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="transaction-card">
+          <div class="transaction-header">
+            <div class="transaction-title">
+              <div class="transaction-icon">
+                <i [class]="getTransactionIcon()"></i>
+              </div>
+              <div>
+                <h2>{{ transactionType | titlecase }}</h2>
+                <p *ngIf="account" class="account-info">
+                  {{ account.accountType | titlecase }} Account • {{ account.accountNumber }}
+                </p>
+              </div>
+            </div>
+            <div class="current-balance" *ngIf="account">
+              <div class="balance-label">Current Balance</div>
+              <div class="balance-amount">R{{ account.balance | number:'1.2-2' }}</div>
+            </div>
+          </div>
+          
+          <div class="transaction-body">
+            <form [formGroup]="transactionForm" (ngSubmit)="onSubmit()">
+              <div class="form-section">
+                <h4 class="section-title">Transaction Details</h4>
+                
+                <div class="form-group">
+                  <label for="amount" class="form-label">
+                    <i class="fas fa-dollar-sign me-2"></i>Amount
+                  </label>
+                  <div class="amount-input-group">
+                    <span class="currency-symbol">R</span>
+                    <input 
+                      type="number" 
+                      class="form-control amount-input" 
+                      id="amount" 
+                      formControlName="amount"
+                      step="0.01"
+                      placeholder="0.00"
+                      [class.is-invalid]="transactionForm.get('amount')?.invalid && transactionForm.get('amount')?.touched">
+                  </div>
+                  <div class="invalid-feedback">
+                    Please enter a valid amount greater than 0.
+                  </div>
+                </div>
+                
+                <div class="form-group" *ngIf="transactionType === 'transfer'">
+                  <label for="toAccountId" class="form-label">
+                    <i class="fas fa-exchange-alt me-2"></i>Transfer To
+                  </label>
+                  <select 
+                    class="form-select modern-select" 
+                    id="toAccountId" 
+                    formControlName="toAccountId"
+                    [class.is-invalid]="transactionForm.get('toAccountId')?.invalid && transactionForm.get('toAccountId')?.touched">
+                    <option value="">Select destination account</option>
+                    <option *ngFor="let acc of accounts" [value]="acc.id">
+                      <span class="account-option">
+                        {{ acc.accountNumber }} ({{ acc.accountType | titlecase }}) - ${{ acc.balance | number:'1.2-2' }}
+                      </span>
+                    </option>
+                  </select>
+                  <div class="invalid-feedback">
+                    Please select a destination account.
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-section">
+                <h4 class="section-title">Additional Information</h4>
+                
+                <div class="form-group">
+                  <label for="category" class="form-label">
+                    <i class="fas fa-tag me-2"></i>Category
+                  </label>
+                  <select class="form-select modern-select" id="category" formControlName="category">
+                    <option value="">Select category (optional)</option>
+                    <option *ngFor="let cat of categories" [value]="cat">
+                      <i class="fas fa-circle me-2"></i>{{ cat }}
+                    </option>
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label for="description" class="form-label">
+                    <i class="fas fa-comment me-2"></i>Description
+                  </label>
+                  <textarea 
+                    class="form-control modern-textarea" 
+                    id="description" 
+                    formControlName="description"
+                    rows="3"
+                    placeholder="Add a note for this transaction (optional)"></textarea>
+                </div>
+              </div>
+              
+              <div class="alert alert-success modern-alert" *ngIf="success">
+                <i class="fas fa-check-circle me-2"></i>{{ success }}
+              </div>
+              
+              <div class="alert alert-danger modern-alert" *ngIf="error">
+                <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+              </div>
+              
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary btn-modern" (click)="goBack()">
+                  <i class="fas fa-arrow-left me-2"></i>Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  class="btn btn-primary btn-modern" 
+                  [disabled]="transactionForm.invalid || loading">
+                  <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+                  <i *ngIf="!loading" [class]="getTransactionIcon() + ' me-2'"></i>
+                  {{ loading ? 'Processing...' : (transactionType | titlecase) }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

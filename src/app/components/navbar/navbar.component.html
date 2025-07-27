@@ -1,0 +1,45 @@
+<nav class="navbar navbar-expand-lg navbar-dark modern-navbar">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" routerLink="/dashboard">
+      <div class="logo-icon">
+        <i class="fas fa-shield-alt"></i>
+      </div>
+      <span class="brand-text">Vaultify</span>
+    </a>
+    
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <!-- Left side navigation -->
+      <ul class="navbar-nav me-auto" *ngIf="isAuthenticated && showDashboardLink">
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center" routerLink="/dashboard" routerLinkActive="active">
+            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+          </a>
+        </li>
+      </ul>
+      
+      <!-- Right side navigation -->
+      <ul class="navbar-nav" *ngIf="isAuthenticated">
+        <!-- User greeting -->
+        <li class="nav-item" *ngIf="user">
+          <span class="nav-link d-flex align-items-center user-greeting">
+            <div class="user-avatar me-2">
+              {{ getInitials(user.name) }}
+            </div>
+            <span class="user-name">{{ user.name }}</span>
+          </span>
+        </li>
+        
+        <!-- Logout button -->
+        <li class="nav-item">
+          <button class="nav-link logout-btn d-flex align-items-center" (click)="logout()">
+            <i class="fas fa-sign-out-alt me-2"></i>Logout
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

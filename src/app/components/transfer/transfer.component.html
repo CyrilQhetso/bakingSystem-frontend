@@ -1,0 +1,207 @@
+<div class="transaction-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="transaction-card">
+          <div class="transaction-header">
+            <div class="transaction-title">
+              <div class="transaction-icon">
+                <i class="fas fa-exchange-alt"></i>
+              </div>
+              <div>
+                <h2>Transfer Money</h2>
+                <p *ngIf="currentAccount" class="account-info">
+                  From: {{ currentAccount.accountType | titlecase }} • {{ currentAccount.accountNumber }}
+                </p>
+              </div>
+            </div>
+            <div class="current-balance" *ngIf="currentAccount">
+              <div class="balance-label">Available Balance</div>
+              <div class="balance-amount">R{{ currentAccount.balance | number:'1.2-2' }}</div>
+            </div>
+          </div>
+          
+          <div class="transaction-body">
+            <form [formGroup]="transferForm" (ngSubmit)="onSubmit()">
+              
+              <!-- Transfer Type Selection -->
+              <div class="form-section">
+                <h4 class="section-title">Transfer Type</h4>
+                <div class="transfer-type-selector">
+                  <div class="form-check form-check-inline">
+                    <input 
+                      class="form-check-input" 
+                      type="radio" 
+                      id="internal" 
+                      [(ngModel)]="transferType" 
+                      value="internal"
+                      (change)="onTransferTypeChange()"
+                      [ngModelOptions]="{standalone: true}">
+                    <label class="form-check-label" for="internal">
+                      <i class="fas fa-building me-2"></i>Between My Accounts
+                    </label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input 
+                      class="form-check-input" 
+                      type="radio" 
+                      id="external" 
+                      [(ngModel)]="transferType" 
+                      value="external"
+                      (change)="onTransferTypeChange()"
+                      [ngModelOptions]="{standalone: true}">
+                    <label class="form-check-label" for="external">
+                      <i class="fas fa-university me-2"></i>To Another Person
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- From Account Selection -->
+              <div class="form-section">
+                <h4 class="section-title">Transfer Details</h4>
+                
+                <div class="form-group">
+                  <label for="fromAccountId" class="form-label">
+                    <i class="fas fa-credit-card me-2"></i>From Account
+                  </label>
+                  <select 
+                    class="form-select modern-select" 
+                    id="fromAccountId" 
+                    formControlName="fromAccountId"
+                    (change)="onFromAccountChange()"
+                    [class.is-invalid]="transferForm.get('fromAccountId')?.invalid && transferForm.get('fromAccountId')?.touched">
+                    <option value="">Select source account</option>
+                    <option *ngFor="let account of userAccounts" [value]="account.id">
+                      {{ account.accountNumber }} ({{ account.accountType | titlecase }}) - R{{ account.balance | number:'1.2-2' }}
+                    </option>
+                  </select>
+                  <div class="invalid-feedback">
+                    Please select a source account.
+                  </div>
+                </div>
+
+                <!-- Internal Transfer - Account Selection -->
+                <div class="form-group" *ngIf="transferType === 'internal'">
+                  <label for="toAccountId" class="form-label">
+                    <i class="fas fa-arrow-right me-2"></i>To Account
+                  </label>
+                  <select 
+                    class="form-select modern-select" 
+                    id="toAccountId" 
+                    formControlName="toAccountId"
+                    [class.is-invalid]="transferForm.get('toAccountId')?.invalid && transferForm.get('toAccountId')?.touched">
+                    <option value="">Select destination account</option>
+                    <option *ngFor="let account of getAvailableAccounts()" [value]="account.id">
+                      {{ account.accountNumber }} ({{ account.accountType | titlecase }}) - R{{ account.balance | number:'1.2-2' }}
+                    </option>
+                  </select>
+                  <div class="invalid-feedback">
+                    Please select a destination account.
+                  </div>
+                </div>
+
+                <!-- External Transfer - Account Number Input -->
+                <div class="form-group" *ngIf="transferType === 'external'">
+                  <label for="toAccountNumber" class="form-label">
+                    <i class="fas fa-hashtag me-2"></i>Recipient Account Number
+                  </label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="toAccountNumber" 
+                    formControlName="toAccountNumber"
+                    placeholder="Enter recipient's account number"
+                    (blur)="validateRecipientAccount()"
+                    [class.is-invalid]="transferForm.get('toAccountNumber')?.invalid && transferForm.get('toAccountNumber')?.touched">
+                  <div class="invalid-feedback">
+                    Please enter a valid account number.
+                  </div>
+                  
+                  <!-- Account Validation Info -->
+                  <div class="mt-2" *ngIf="recipientAccountInfo">
+                    <div class="alert alert-success py-2">
+                      <i class="fas fa-check me-2"></i>
+                      Account found: {{ recipientAccountInfo.accountType | titlecase }} Account
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Amount Input -->
+                <div class="form-group">
+                  <label for="amount" class="form-label">
+                    <i class="fas fa-dollar-sign me-2"></i>Amount
+                  </label>
+                  <div class="amount-input-group">
+                    <span class="currency-symbol">R</span>
+                    <input 
+                      type="number" 
+                      class="form-control amount-input" 
+                      id="amount" 
+                      formControlName="amount"
+                      step="0.01"
+                      placeholder="0.00"
+                      [class.is-invalid]="transferForm.get('amount')?.invalid && transferForm.get('amount')?.touched">
+                  </div>
+                  <div class="invalid-feedback">
+                    Please enter a valid amount greater than 0.
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Additional Information -->
+              <div class="form-section">
+                <h4 class="section-title">Additional Information</h4>
+                
+                <div class="form-group">
+                  <label for="category" class="form-label">
+                    <i class="fas fa-tag me-2"></i>Category
+                  </label>
+                  <select class="form-select modern-select" id="category" formControlName="category">
+                    <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                  </select>
+                </div>
+                
+                <div class="form-group">
+                  <label for="description" class="form-label">
+                    <i class="fas fa-comment me-2"></i>Description
+                  </label>
+                  <textarea 
+                    class="form-control modern-textarea" 
+                    id="description" 
+                    formControlName="description"
+                    rows="3"
+                    placeholder="Add a note for this transfer (optional)"></textarea>
+                </div>
+              </div>
+              
+              <!-- Alerts -->
+              <div class="alert alert-success modern-alert" *ngIf="success">
+                <i class="fas fa-check-circle me-2"></i>{{ success }}
+              </div>
+              
+              <div class="alert alert-danger modern-alert" *ngIf="error">
+                <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+              </div>
+              
+              <!-- Form Actions -->
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary btn-modern" (click)="goBack()">
+                  <i class="fas fa-arrow-left me-2"></i>Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  class="btn btn-primary btn-modern" 
+                  [disabled]="transferForm.invalid || loading">
+                  <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+                  <i *ngIf="!loading" class="fas fa-exchange-alt me-2"></i>
+                  {{ loading ? 'Processing...' : 'Transfer Money' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

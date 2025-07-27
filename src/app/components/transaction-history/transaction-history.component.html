@@ -1,0 +1,221 @@
+<div class="transaction-history-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <!-- Header Section -->
+        <div class="transaction-history-header">
+          <div class="header-content">
+            <div class="header-info">
+              <div class="header-icon">
+                <i class="fas fa-history"></i>
+              </div>
+              <div>
+                <h2>{{ getPageTitle() }}</h2>
+                <p *ngIf="account && !isAllTransactions" class="account-info">
+                  Account: {{ account.accountNumber }} • {{ account.accountType | titlecase }}
+                </p>
+                <p *ngIf="isAllTransactions" class="account-info">
+                  All your transaction history across accounts
+                </p>
+              </div>
+            </div>
+            <div class="header-balance" *ngIf="account && !isAllTransactions">
+              <div class="balance-label">Current Balance</div>
+              <div class="balance-amount">R{{ account.balance | number:'1.2-2' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="text-center py-5" *ngIf="loading">
+          <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3 text-muted">Loading transactions...</p>
+        </div>
+
+        <!-- Error State -->
+        <div class="alert alert-danger alert-modern" *ngIf="error">
+          <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+        </div>
+
+        <!-- Main Content -->
+        <div *ngIf="!loading && !error">
+          <!-- Filters Card -->
+          <div class="filters-card">
+            <h5 class="mb-3">
+              <i class="fas fa-filter me-2"></i>Filter Transactions
+            </h5>
+            
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <label for="categoryFilter" class="form-label">Category</label>
+                <select 
+                  class="form-select" 
+                  id="categoryFilter" 
+                  [(ngModel)]="selectedCategory" 
+                  (change)="applyFilters()">
+                  <option value="">All Categories</option>
+                  <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+                </select>
+              </div>
+              
+              <div class="col-md-3 mb-3">
+                <label for="typeFilter" class="form-label">Type</label>
+                <select 
+                  class="form-select" 
+                  id="typeFilter" 
+                  [(ngModel)]="selectedType" 
+                  (change)="applyFilters()">
+                  <option value="">All Types</option>
+                  <option *ngFor="let type of transactionTypes" [value]="type">{{ type | titlecase }}</option>
+                </select>
+              </div>
+              
+              <div class="col-md-2 mb-3">
+                <label for="dateFrom" class="form-label">From Date</label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  id="dateFrom" 
+                  [(ngModel)]="dateFrom" 
+                  (change)="applyFilters()">
+              </div>
+              
+              <div class="col-md-2 mb-3">
+                <label for="dateTo" class="form-label">To Date</label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  id="dateTo" 
+                  [(ngModel)]="dateTo" 
+                  (change)="applyFilters()">
+              </div>
+              
+              <div class="col-md-2 mb-3 d-flex align-items-end">
+                <button class="btn btn-outline-secondary w-100" (click)="clearFilters()">
+                  <i class="fas fa-times me-1"></i>Clear
+                </button>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <label for="searchTerm" class="form-label">Search Description</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="searchTerm" 
+                  placeholder="Search transaction descriptions..." 
+                  [(ngModel)]="searchTerm" 
+                  (input)="applyFilters()">
+              </div>
+              
+              <div class="col-md-4 mb-3 d-flex align-items-end">
+                <button class="btn btn-primary w-100" (click)="downloadStatement()">
+                  <i class="fas fa-download me-2"></i>Download Statement
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Transactions List -->
+          <div class="transactions-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Transactions ({{ filteredTransactions.length }})
+              </h5>
+            </div>
+
+            <!-- Desktop Table View -->
+            <div class="table-responsive d-none d-md-block">
+              <table class="table transaction-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th *ngIf="shouldShowAccountInfo()">Account</th>
+                    <th class="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let transaction of filteredTransactions" class="transaction-row">
+                    <td>
+                      <div class="transaction-date">
+                        {{ transaction.timestamp | date:'MMM dd, yyyy' }}<br>
+                        <small class="text-muted">{{ transaction.timestamp | date:'HH:mm' }}</small>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="transaction-description">
+                        {{ transaction.description || transaction.type }}
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge bg-secondary">{{ transaction.category || 'Other' }}</span>
+                    </td>
+                    <td>
+                      <span [class]="'badge bg-' + (transaction.type === 'DEPOSIT' ? 'success' : transaction.type === 'WITHDRAWAL' ? 'danger' : 'info')">
+                        {{ transaction.type }}
+                      </span>
+                    </td>
+                    <td *ngIf="shouldShowAccountInfo()">
+                      <small class="text-muted">{{ getAccountDisplay(transaction) }}</small>
+                    </td>
+                    <td class="text-end">
+                      <span [class]="getTransactionClass(transaction)" class="transaction-amount">
+                        {{ getTransactionAmount(transaction) >= 0 ? '+' : '' }}R{{ Math.abs(getTransactionAmount(transaction)) | number:'1.2-2' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="d-md-none">
+              <div class="transaction-card-mobile" *ngFor="let transaction of filteredTransactions">
+                <div class="transaction-card-header">
+                  <div class="transaction-info">
+                    <div class="transaction-desc">{{ transaction.description || transaction.type }}</div>
+                    <div class="transaction-date">{{ transaction.timestamp | date:'MMM dd, yyyy HH:mm' }}</div>
+                  </div>
+                  <div class="transaction-amount-mobile" [class]="getTransactionClass(transaction)">
+                    {{ getTransactionAmount(transaction) >= 0 ? '+' : '' }}R{{ Math.abs(getTransactionAmount(transaction)) | number:'1.2-2' }}
+                  </div>
+                </div>
+                <div class="transaction-card-details">
+                  <div class="transaction-meta">
+                    <span class="badge bg-secondary me-2">{{ transaction.category || 'Other' }}</span>
+                    <span [class]="'badge bg-' + (transaction.type === 'DEPOSIT' ? 'success' : transaction.type === 'WITHDRAWAL' ? 'danger' : 'info')">
+                      {{ transaction.type }}
+                    </span>
+                  </div>
+                  <div *ngIf="shouldShowAccountInfo()" class="transaction-account">
+                    <small class="text-muted">{{ getAccountDisplay(transaction) }}</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" *ngIf="filteredTransactions.length === 0">
+              <div class="empty-icon">
+                <i class="fas fa-receipt"></i>
+              </div>
+              <h4>No transactions found</h4>
+              <p *ngIf="selectedCategory || selectedType || dateFrom || dateTo || searchTerm">
+                Try adjusting your filters to see more results.
+              </p>
+              <p *ngIf="!selectedCategory && !selectedType && !dateFrom && !dateTo && !searchTerm">
+                No transactions have been made yet.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
